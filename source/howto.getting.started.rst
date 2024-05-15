@@ -112,8 +112,6 @@ As our first setup consist in a dual node cluster, we have to follow the steps d
       $ om mon
 
       Threads                            <span style="font-weight: bold">node1</span>
-       <span style="font-weight: bold">hb#1.rx</span>   <span style="color: #00aa00">running</span> 0.0.0.0:10000 | <span style="color: #767676">/</span>
-       <span style="font-weight: bold">hb#1.tx</span>   <span style="color: #00aa00">running</span>               | <span style="color: #767676">/</span>
        <span style="font-weight: bold">listener</span>  <span style="color: #00aa00">running</span> 0.0.0.0:1214
        <span style="font-weight: bold">monitor</span>   <span style="color: #00aa00">running</span>
        <span style="font-weight: bold">scheduler</span> <span style="color: #00aa00">running</span>
@@ -125,6 +123,7 @@ As our first setup consist in a dual node cluster, we have to follow the steps d
       Services                           <span style="font-weight: bold">node1</span>
     </pre>
 
+A pair of "Threads" section lines will appear later, when at least a second node joins this cluster seed : one for the sender and the other for the receiver.
 
 Service Creation
 ================
