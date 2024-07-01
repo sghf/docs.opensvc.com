@@ -15,3 +15,4 @@ Contents:
    howto.support.service
    howto.encryption
    howto.slapos.comp1
+   howto.sozu
