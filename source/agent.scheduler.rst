@@ -203,13 +203,13 @@ Examples
 
   ``09:00``
 
-* Schedule every hour between midnight and 6am
+* Schedule every hour between midnight and 6am, every day
 
   ``00:00-06:00@60``
 
-* Schedule once between midnight and 2am
+* Schedule once between midnight and 2am, every day
 
-  ``00:00-02:00@121``
+  ``00:00-02:00``
 
 * Schedule once between midnight and 2am every last day of month
 
