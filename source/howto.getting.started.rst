@@ -75,7 +75,7 @@ Cluster members needs ssh mutual authentication to exchange some OpenSVC configu
 
 **On demo1**::
 
-	demo1:/ # om node update ssh keys --node='*'
+    demo1:/ # om node update ssh keys --node='*'
 
 
 Set Host Environment
@@ -232,6 +232,8 @@ Our first service is now ready to use. We can query its status.
                 color: gray;
             }
         </style>
+        $ om svc1 print status
+
         svc1                           <span class="down">down</span>
         `- instances
             `- demo1                      <span class="warn">warn</span>       <span class="warn">warn</span>, <span class="frozen">frozen</span>, <span class="not-provisioned">not provisioned</span>, <span class="idle">idle</span>
@@ -405,7 +407,7 @@ In the service directory structure, we put a standalone binary of the Binserve w
 
         demo1:$ cd /svc1/app
 
-        demo1:svc1/app$ sudo wget -O /svc1/app/binserve https://github.com/mufeedvh/binserve/releases/download/v0.2.0/binserve-v0.2.0-x86_64-unknown-linux-gnu.tar.gz
+        demo1:svc1/app$ sudo wget -O /svc1/app/binserve.tar.gz https://github.com/mufeedvh/binserve/releases/download/v0.2.0/binserve-v0.2.0-x86_64-unknown-linux-gnu.tar.gz
         --2024-07-12 09:34:40--  https://github.com/mufeedvh/binserve/releases/download/v0.2.0/binserve-v0.2.0-x86_64-unknown-linux-gnu.tar.gz
         Resolving github.com (github.com)... 140.82.121.4
         Connecting to github.com (github.com)|140.82.121.4|:443... connected.
@@ -416,19 +418,19 @@ In the service directory structure, we put a standalone binary of the Binserve w
         Connecting to objects.githubusercontent.com (objects.githubusercontent.com)|185.199.109.133|:443... connected.
         HTTP request sent, awaiting response... 200 OK
         Length: 3639943 (3.5M) [application/octet-stream]
-        Saving to: ‘/svc1/app/webserver’
+        Saving to: ‘/svc1/app/binserve.tar.gz’
 
         /svc1/app/webserver        100%[=====================================>]   3.47M  --.-KB/s    in 0.1s
 
-        2024-07-12 09:34:41 (33.2 MB/s) - ‘/svc1/app/webserver’ saved [3639943/3639943]
+        2024-07-12 09:34:41 (33.2 MB/s) - ‘/svc1/app/binserve.tar.gz’ saved [3639943/3639943]
 
 
-        demo1:/svc1/app # ls -l /svc1/app/binserve
-        -rw-r--r-- 1 root root 2527016 June 13  2022 /svc1/app/binserve
+        demo1:/svc1/app # ls -l /svc1/app/binserve.tar.gz
+        -rw-r--r-- 1 root root 2527016 June 13  2022 /svc1/app/binserve.tar.gz
 
 Then, you can extract the content of binserve archive::
 
-        demo1:/svc1/app # tar -xvf binserve
+        demo1:/svc1/app # tar -xvf binserve.tar.gz
 
 Now we can launch the server and bind our IP address with ``--host`` option::
 
@@ -810,7 +812,7 @@ We can now try to switch the svc1 service from ``demo1`` to ``demo2``
               `- sync#i0        ...O./.. <span class="up">up</span>         rsync svc config to nodes
     </pre>
 
-Service svc1 is now running on node ``demo2``. Service relocation is easy as that.
+Service svc1 is now running on node ``demo2``. Service relocation is as easy as that.
 
 Now, what happens if we try to start our service on ``demo1`` while already running on ``demo2`` ? ::
 
