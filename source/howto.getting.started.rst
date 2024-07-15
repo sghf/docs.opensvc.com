@@ -71,7 +71,7 @@ Cluster members needs ssh mutual authentication to exchange some OpenSVC configu
 
 .. note::
 
-        It is also possible for the agent to login on a peer cluster node using an unprivileged user, using the user node.conf parameter. In this case, the remote user needs sudo priviles to run the following commands as root: ``nodemgr``, ``svcmgr`` and ``rsync``.
+        It is also possible for the agent to login on a peer cluster node using an unprivileged user, using the user node.conf parameter. In this case, the remote user needs sudo privileges to run the following commands as root: ``nodemgr``, ``svcmgr`` and ``rsync``.
 
 **On demo1**::
 
@@ -142,7 +142,7 @@ We can list our services with the following command::
     $ om '*/svc/*' ls
     svc1
 
-We are going to define a service running on the primary node ``demo1``, failing-over to node ``demo2``, using one IP address named ``demosvc.opensvc.com`` (name to ip resolution is done by the OpenSVC agent), one LVM volume group ``vgsvc1`` and two filesystems hosted in logical volumes ``/dev/vgsvc1/app`` and ``/dev/vgsvc1/data``. We expect those resources to already exists on the system. #ajouter ote disque partagé
+We are going to define a service running on the primary node ``demo1``, failing-over to node ``demo2``, using one IP address named ``demosvc.opensvc.com`` (name to ip resolution is done by the OpenSVC agent), one LVM volume group ``vgsvc1`` and two filesystems hosted in logical volumes ``/dev/vgsvc1/app`` and ``/dev/vgsvc1/data``. We expect those resources to already exists on the system. We use a shared disk where demo1 and demo2 can access our service resources.
 
 **On demo1 node**::
 
@@ -181,6 +181,8 @@ We are going to define a service running on the primary node ``demo1``, failing-
         dev = {disk#1.exposed_devs[0]}
         mnt = /{name}/{disk#2.name}
 
+Here, we use a bridge so our two nodes demo1 and demo2 can access public network.
+
 The DEFAULT section in the service file describes the service itself: human readable name, nodes where the service is expected to run on...
 
 Every other section defines a resource managed by the service.
@@ -209,39 +211,38 @@ Our first service is now ready to use. We can query its status.
 
 .. raw:: html
 
-    <style>
-        .down {
-            color: red;
-        }
-        .up {
-            color: green;
-        }
-        .warn {
-            color: brown;
-        }
-        .frozen {
-            color: navy;
-        }
-        .not-provisioned {
-            color: red;
-        }
-        .idle {
-            color: gray;
-        }
-    </style>
-
-    <pre>
-    svc1                           <span class="down">down</span>
+    <pre class=output>
+        <style>
+            .down {
+                color: red;
+            }
+            .up {
+                color: green;
+            }
+            .warn {
+                color: brown;
+            }
+            .frozen {
+                color: navy;
+            }
+            .not-provisioned {
+                color: red;
+            }
+            .idle {
+                color: gray;
+            }
+        </style>
+        svc1                           <span class="down">down</span>
         `- instances
-           `- demo1                      <span class="warn">warn</span>       <span class="warn">warn</span>, <span class="frozen">frozen</span>, <span class="not-provisioned">not provisioned</span>, <span class="idle">idle</span>
-              |- ip#0           .....P.. <span class="down">down</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
-              |- disk#0         .....P.. <span class="down">down</span>       vg vgsvc1
-              |- disk#1         .....P.. <span class="down">down</span>       lv vgsvc1/app
-              |- disk#2         .....P.. <span class="down">down</span>       lv vgsvc1/data
-              |- fs#app         .....P.. <span class="down">down</span>       xfs /dev/vgsvc1/app@/svc1/app
-              |- fs#data        .....P.. <span class="down">down</span>       xfs /dev/vgsvc1/data@/svc1/data
-              `- sync#i0        ...O./.. n/a        rsync svc config to nodes
-                                                                                          info: paused, service not up
+            `- demo1                      <span class="warn">warn</span>       <span class="warn">warn</span>, <span class="frozen">frozen</span>, <span class="not-provisioned">not provisioned</span>, <span class="idle">idle</span>
+                |- ip#0           .....P.. <span class="down">down</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
+                |- disk#0         .....P.. <span class="down">down</span>       vg vgsvc1
+                |- disk#1         .....P.. <span class="down">down</span>       lv vgsvc1/app
+                |- disk#2         .....P.. <span class="down">down</span>       lv vgsvc1/data
+                |- fs#app         .....P.. <span class="down">down</span>       xfs /dev/vgsvc1/app@/svc1/app
+                |- fs#data        .....P.. <span class="down">down</span>       xfs /dev/vgsvc1/data@/svc1/data
+                `- sync#i0        ...O./.. n/a        rsync svc config to nodes
+                                                                                        info: paused, service not up
     </pre>
 
 .. note::
@@ -252,43 +253,42 @@ Our first service is now ready to use. We can query its status.
 
 .. raw:: html
 
-    <style>
-        .down {
-            color: red;
-        }
-        .up {
-            color: green;
-        }
-        .warn {
-            color: brown;
-        }
-        .frozen {
-            color: navy;
-        }
-        .not-provisioned {
-            color: red;
-        }
-        .idle {
-            color: gray;
-        }
-    </style>
+    <pre class=output>
+        <style>
+            .down {
+                color: red;
+            }
+            .up {
+                color: green;
+            }
+            .warn {
+                color: brown;
+            }
+            .frozen {
+                color: navy;
+            }
+            .not-provisioned {
+                color: red;
+            }
+            .idle {
+                color: gray;
+            }
+        </style>
+        $ om svc1 set provisioned
 
-    <pre>
-    $ om svc1 set provisioned
+        $ om svc1 print status
 
-    $ om svc1 print status
-
-    svc1                           <span class="down">down</span>
+        svc1                           <span class="down">down</span>
         `- instances
-           `- demo1                      <span class="warn">warn</span>       <span class="warn">warn</span>, <span class="frozen">frozen</span>, <span class="idle">idle</span>
-              |- ip#0           ........ <span class="down">down</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
-              |- disk#0         ........ <span class="down">down</span>       vg vgsvc1
-              |- disk#1         ........ <span class="down">down</span>       lv vgsvc1/app
-              |- disk#2         ........ <span class="down">down</span>       lv vgsvc1/data
-              |- fs#app         ........ <span class="down">down</span>       xfs /dev/vgsvc1/app@/svc1/app
-              |- fs#data        ........ <span class="down">down</span>       xfs /dev/vgsvc1/data@/svc1/data
-              `- sync#i0        ...O./.. n/a        rsync svc config to nodes
-                                                                                          info: paused, service not up
+            `- demo1                      <span class="warn">warn</span>       <span class="warn">warn</span>, <span class="frozen">frozen</span>, <span class="idle">idle</span>
+                |- ip#0           ........ <span class="down">down</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
+                |- disk#0         ........ <span class="down">down</span>       vg vgsvc1
+                |- disk#1         ........ <span class="down">down</span>       lv vgsvc1/app
+                |- disk#2         ........ <span class="down">down</span>       lv vgsvc1/data
+                |- fs#app         ........ <span class="down">down</span>       xfs /dev/vgsvc1/app@/svc1/app
+                |- fs#data        ........ <span class="down">down</span>       xfs /dev/vgsvc1/data@/svc1/data
+                `- sync#i0        ...O./.. n/a        rsync svc config to nodes
+                                                                                        info: paused, service not up
     </pre>
 
 This command collects and displays status for each service ressource :
@@ -359,35 +359,34 @@ We can confirm everything is OK with the service's ``print status`` command
 
 .. raw:: html
 
-    <style>
-        .up {
-            color: green;
-        }
-        .frozen {
-            color: navy;
-        }
-        .started {
-            color: gray;
-        }
-        .idle {
-            color: gray;
-        }
-    </style>
+    <pre class=output>
+        <style>
+            .up {
+                color: green;
+            }
+            .frozen {
+                color: navy;
+            }
+            .started {
+                color: gray;
+            }
+            .idle {
+                color: gray;
+            }
+        </style>
+        $ om svc1 print status
 
-    <pre>
-    $ om svc1 print status
-
-    svc1                           <span class="up">up</span>
+        svc1                           <span class="up">up</span>
         `- instances
-           `- demo1                      <span class="up">up</span>       <span class="frozen">frozen</span>, <span class="idle">idle</span>, <span class="started">started</span>
-              |- ip#0           ........ <span class="up">up</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
-              |- disk#0         ........ <span class="up">up</span>       vg vgsvc1
-              |- disk#1         ........ <span class="up">up</span>       lv vgsvc1/app
-              |- disk#2         ........ <span class="up">up</span>       lv vgsvc1/data
-              |- fs#app         ........ <span class="up">up</span>       xfs /dev/vgsvc1/app@/svc1/app
-              |- fs#data        ........ <span class="up">up</span>       xfs /dev/vgsvc1/data@/svc1/data
-              `- sync#i0        ...O./.. n/a        rsync svc config to nodes
-                                                                                          info: paused, service not up
+            `- demo1                      <span class="up">up</span>       <span class="frozen">frozen</span>, <span class="idle">idle</span>, <span class="started">started</span>
+                |- ip#0           ........ <span class="up">up</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
+                |- disk#0         ........ <span class="up">up</span>       vg vgsvc1
+                |- disk#1         ........ <span class="up">up</span>       lv vgsvc1/app
+                |- disk#2         ........ <span class="up">up</span>       lv vgsvc1/data
+                |- fs#app         ........ <span class="up">up</span>       xfs /dev/vgsvc1/app@/svc1/app
+                |- fs#data        ........ <span class="up">up</span>       xfs /dev/vgsvc1/data@/svc1/data
+                `- sync#i0        ...O./.. n/a      rsync svc config to nodes
+                                                                                        info: paused, service not up
     </pre>
 
 At this point, we have a running service, configured to run on demo1 node.
@@ -402,11 +401,11 @@ We will use a very simple example : a tiny webserver with a single index.html fi
 Application Binary
 ++++++++++++++++++
 
-In the service directory structure, we put a standalone binary of the Mongoose web server (https://code.google.com/p/mongoose/) ::
+In the service directory structure, we put a standalone binary of the Binserve web server (https://github.com/mufeedvh/binserve/) ::
 
         demo1:$ cd /svc1/app
 
-        demo1:svc1/app$ sudo wget -O /svc1/app/webserver https://github.com/mufeedvh/binserve/releases/download/v0.2.0/binserve-v0.2.0-x86_64-unknown-linux-gnu.tar.gz
+        demo1:svc1/app$ sudo wget -O /svc1/app/binserve https://github.com/mufeedvh/binserve/releases/download/v0.2.0/binserve-v0.2.0-x86_64-unknown-linux-gnu.tar.gz
         --2024-07-12 09:34:40--  https://github.com/mufeedvh/binserve/releases/download/v0.2.0/binserve-v0.2.0-x86_64-unknown-linux-gnu.tar.gz
         Resolving github.com (github.com)... 140.82.121.4
         Connecting to github.com (github.com)|140.82.121.4|:443... connected.
@@ -458,9 +457,8 @@ Of course, we will store our script named ``binserve_launcher`` in the directory
 
         demo1:/ # cd /svc1/app
 
-        demo1:/svc1/app# cat weblauncher
+        demo1:/svc1/app# cat binserve_launcher
         #!/bin/bash
-        set -x
         SVCROOT=/svc1
         APPROOT=${SVCROOT}/app
         DAEMON=${APPROOT}/binserve
@@ -499,7 +497,7 @@ Of course, we will store our script named ``binserve_launcher`` in the directory
         esac
         exit 0
 
-Make sure the script is working fine outside of the OpenSVC context (and don't forget to add execute rights to /svc1/app/webserver) ::
+Make sure the script is working fine outside of the OpenSVC context (and don't forget to add execute rights to /svc1/app/binserve) ::
 
         demo1:/svc1/app/ # ./binserve_launcher status
         demo1:/svc1/app/ # echo $?
@@ -548,42 +546,41 @@ Querying the service status, the ``app`` ressource is now reporting ``up``
 
 .. raw:: html
 
-    <style>
-        .up {
-            color: green;
-        }
-        .frozen {
-            color: navy;
-        }
-        .started {
-            color: gray;
-        }
-        .idle {
-            color: gray;
-        }
-    </style>
+    <pre class=output>
+        <style>
+            .up {
+                color: green;
+            }
+            .frozen {
+                color: navy;
+            }
+            .started {
+                color: gray;
+            }
+            .idle {
+                color: gray;
+            }
+        </style>
+        $ om svc1 print status
 
-    <pre>
-    $ om svc1 print status
-
-    svc1                           <span class="up">up</span>
+        svc1                           <span class="up">up</span>
         `- instances
-           `- demo1                      <span class="up">up</span>       <span class="frozen">frozen</span>, <span class="idle">idle</span>, <span class="started">started</span>
-              |- ip#0           ........ <span class="up">up</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
-              |- disk#0         ........ <span class="up">up</span>       vg vgsvc1
-              |- disk#1         ........ <span class="up">up</span>       lv vgsvc1/app
-              |- disk#2         ........ <span class="up">up</span>       lv vgsvc1/data
-              |- fs#app         ........ <span class="up">up</span>       xfs /dev/vgsvc1/app@/svc1/app
-              |- fs#data        ........ <span class="up">up</span>       xfs /dev/vgsvc1/data@/svc1/data
-              |- app#web        ...../.. <span class="up">up</span>       forking: weblauncher
-              `- sync#i0        ...O./.. n/a        rsync svc config to nodes
-                                                                                          info: paused, service not up
+            `- demo1                      <span class="up">up</span>       <span class="frozen">frozen</span>, <span class="idle">idle</span>, <span class="started">started</span>
+                |- ip#0           ........ <span class="up">up</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
+                |- disk#0         ........ <span class="up">up</span>       vg vgsvc1
+                |- disk#1         ........ <span class="up">up</span>       lv vgsvc1/app
+                |- disk#2         ........ <span class="up">up</span>       lv vgsvc1/data
+                |- fs#app         ........ <span class="up">up</span>       xfs /dev/vgsvc1/app@/svc1/app
+                |- fs#data        ........ <span class="up">up</span>       xfs /dev/vgsvc1/data@/svc1/data
+                |- app#web        ...../.. <span class="up">up</span>       forking: weblauncher
+                `- sync#i0        ...O./.. n/a      rsync svc config to nodes
+                                                                                        info: paused, service not up
     </pre>
 
 Let's check if that is really the case::
 
-        node1:/ # ps auxww | grep binserver
-        root      473398  0.0  0.2 554288  8960 ?        Sl   14:39   0:01 /svc1/app/binserve --host 5.196.34.135:8080
+        node1:/ # ps auxww | grep binserve
+        root      479113  0.0  0.2 697672 10400 ?        Sl   Jul12   2:12 /svc1/app/binserve --host 5.196.34.135:8080
 
         node1:~ # curl demosvc.opensvc.com:8080
         <!--
@@ -654,42 +651,41 @@ The overall status is now reported as being down
 
 .. raw:: html
 
-    <style>
-        .down {
-            color: red;
-        }
-        .up {
-            color: green;
-        }
-        .warn {
-            color: brown;
-        }
-        .frozen {
-            color: navy;
-        }
-        .not-provisioned {
-            color: red;
-        }
-        .idle {
-            color: gray;
-        }
-    </style>
+    <pre class=output>
+        <style>
+            .down {
+                color: red;
+            }
+            .up {
+                color: green;
+            }
+            .warn {
+                color: brown;
+            }
+            .frozen {
+                color: navy;
+            }
+            .not-provisioned {
+                color: red;
+            }
+            .idle {
+                color: gray;
+            }
+        </style>
+        $ om svc1 print status
 
-    <pre>
-    $ om svc1 print status
-
-    svc1                           <span class="down">down</span>
+        svc1                           <span class="down">down</span>
         `- instances
-           `- demo1                      <span class="warn">warn</span>       <span class="warn">warn</span>, <span class="frozen">frozen</span>, <span class="idle">idle</span>
-              |- ip#0           ........ <span class="down">down</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
-              |- disk#0         ........ <span class="down">down</span>       vg vgsvc1
-              |- disk#1         ........ <span class="down">down</span>       lv vgsvc1/app
-              |- disk#2         ........ <span class="down">down</span>       lv vgsvc1/data
-              |- fs#app         ........ <span class="down">down</span>       xfs /dev/vgsvc1/app@/svc1/app
-              |- fs#data        ........ <span class="down">down</span>       xfs /dev/vgsvc1/data@/svc1/data
-              |- app#web        ...../.. <span class="down">down</span>       forking: weblauncher
-              `- sync#i0        ...O./.. n/a        rsync svc config to nodes
-                                                                                          info: paused, service not up
+            `- demo1                      <span class="warn">warn</span>       <span class="warn">warn</span>, <span class="frozen">frozen</span>, <span class="idle">idle</span>
+                |- ip#0           ........ <span class="down">down</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
+                |- disk#0         ........ <span class="down">down</span>       vg vgsvc1
+                |- disk#1         ........ <span class="down">down</span>       lv vgsvc1/app
+                |- disk#2         ........ <span class="down">down</span>       lv vgsvc1/data
+                |- fs#app         ........ <span class="down">down</span>       xfs /dev/vgsvc1/app@/svc1/app
+                |- fs#data        ........ <span class="down">down</span>       xfs /dev/vgsvc1/data@/svc1/data
+                |- app#web        ...../.. <span class="down">down</span>       forking: weblauncher
+                `- sync#i0        ...O./.. n/a        rsync svc config to nodes
+                                                                                        info: paused, service not up
     </pre>
 
 Let's restart the service to continue this tutorial::
@@ -707,28 +703,27 @@ After this change, the service configuration needs replication to the ``demo2`` 
 
 First, we are going to add ``demo2`` in the same cluster than ``demo1``
 
-**On demo1**
+**On demo1**::
+
+        $ om cluster get --kw cluster.secret
+        2bfca0d1393611efa4dc00163e000000
 
 **On demo2**
 
 .. raw:: html
 
-    <style>
-        .running {
-            color: green;
-        }
-        .O-caret {
-            color: green;
-        }
-        .X-caret {
-            color: gray;
-        }
-    </style>
-
-    <pre>
-        $ om cluster get --kw cluster.secret
-        2bfca0d1393611efa4dc00163e000000
-
+    <pre class=output>
+        <style>
+            .running {
+                color: green;
+            }
+            .O-caret {
+                color: green;
+            }
+            .X-caret {
+                color: gray;
+            }
+        </style>
         $ om daemon join --secret 2bfca0d1393611efa4dc00163e000000 --node node1
         @ n:demo2
           freeze local node
@@ -773,31 +768,30 @@ We can now try to switch the svc1 service from ``demo1`` to ``demo2``
 
 .. raw:: html
 
-    <style>
-        .down {
-            color: red;
-        }
-        .placement {
-            color: red;
-        }
-        .up {
-            color: green;
-        }
-        .warn {
-            color: brown;
-        }
-        .frozen {
-            color: navy;
-        }
-        .not-provisioned {
-            color: red;
-        }
-        .idle {
-            color: gray;
-        }
-    </style>
-
-    <pre>
+    <pre class=output>
+        <style>
+            .down {
+                color: red;
+            }
+            .placement {
+                color: red;
+            }
+            .up {
+                color: green;
+            }
+            .warn {
+                color: brown;
+            }
+            .frozen {
+                color: navy;
+            }
+            .not-provisioned {
+                color: red;
+            }
+            .idle {
+                color: gray;
+            }
+        </style>
         $ om svc1 switch
         $ om mon
         $ om svc1 print status -r
@@ -816,12 +810,12 @@ We can now try to switch the svc1 service from ``demo1`` to ``demo2``
               `- sync#i0        ...O./.. <span class="up">up</span>         rsync svc config to nodes
     </pre>
 
-Service svc1 is now running on node ``demo2``. Service relocation operational is easy as that.
+Service svc1 is now running on node ``demo2``. Service relocation is easy as that.
 
 Now, what happens if we try to start our service on ``demo1`` while already running on ``demo2`` ? ::
 
         node1:/ # om svc1 start --local
-        node1.svc1.ip#0        checking 192.168.121.42 availability
+        node1.svc1.ip#0        checking 5.196.34.135 availability
         node1.svc1           E start aborted due to resource ip#0 conflict
         node1.svc1             skip rollback start: no resource activated
 
@@ -844,7 +838,7 @@ On the node currently running your service, add ``orchestrate = ha`` in the ``DE
 
         [DEFAULT]
         app = MyApp
-        nodes = node1 node2
+        nodes = demo1 demo2
         orchestrate = ha
         (...)
 
