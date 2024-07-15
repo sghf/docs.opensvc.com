@@ -12,8 +12,8 @@ Prerequisites
 
 The demonstration environment is composed of:
 
-* A pair of Centos7 servers named ``node1`` and ``node2``, respectively acting as first and second cluster node
-* Both nodes are connected to the same network segment 192.168.121.0/24
+* A pair of Ubuntu 24.04 servers named ``demo1`` and ``demo2``, respectively acting as first and second cluster node
+* Both nodes are connected to the same network segment on 5.196.34.128/27
 * root access is mandatory
 
 OpenSVC Installation
@@ -25,12 +25,9 @@ Install the OpenSVC Agent on both cluster nodes.
 
 **On both nodes**::
 
-        $ wget -O /tmp/opensvc.latest.rpm https://repo.opensvc.com/rpms/current
+        $ wget -O /tmp/opensvc.latest.deb https://repo.opensvc.com/deb/current
 
-        $ sudo yum -y install /tmp/opensvc.latest.rpm
-
-        $ sudo rpm -qa | grep opensvc
-        opensvc-1.9-906.noarch
+        $ sudo apt install -y /tmp/opensvc.latest.deb
 
         $ sudo systemctl start opensvc-agent.service
 
@@ -42,17 +39,22 @@ We can also check for proper daemon behaviour:
 .. raw:: html
 
     <pre class=output>
-    $ sudo svcmon
-    Threads                           <span style="font-weight: bold">node1</span>
-     <span style="font-weight: bold">listener</span>  <span style="color: #00aa00">running</span> 0.0.0.0:1214
+    $ sudo om mon
+
+    Threads                           <span style="font-weight: bold">demo1</span>
+     <span style="font-weight: bold">daemon</span>    <span style="color: #00aa00">running</span>               |
+     <span style="font-weight: bold">listener</span>  <span style="color: #00aa00">running</span> :1214
      <span style="font-weight: bold">monitor</span>   <span style="color: #00aa00">running</span>
      <span style="font-weight: bold">scheduler</span> <span style="color: #00aa00">running</span>
 
-    Nodes                             <span style="font-weight: bold">node1</span>
-     <span style="font-weight: bold"> 15m</span>                            | 0.1
+    Nodes                             <span style="font-weight: bold">demo1</span>
+     <span style="font-weight: bold"> score</span>                          | 70
+     <span style="font-weight: bold">  load 15m</span>                      | 0.0
+     <span style="font-weight: bold">  mem</span>                           | 10/98%:3.82g
+     <span style="font-weight: bold">  swap</span>                          | -
      <span style="font-weight: bold"> state</span>                          |
 
-    Services                          <span style="font-weight: bold">node1</span>
+    */svc/*                          <span style="font-weight: bold">  demo1</span>
     </pre>
 
 The ``Threads`` section is explained here :ref:`agent.daemon`
@@ -64,31 +66,17 @@ SSH Keys Setup
 
 Cluster members needs ssh mutual authentication to exchange some OpenSVC configuration files. Each node must trust its peer through key-based authentication to allow these communications.
 
-* node1 will be able to connect to node2 as root.
-* node2 will be able to connect to node1 as root.
+* demo1 will be able to connect to demo2 as root.
+* demo2 will be able to connect to demo1 as root.
 
 .. note::
 
-        It is also possible for the agent to login on a peer cluster node using an unprivileged user, using the ruser node.conf parameter. In this case, the remote user needs sudo priviles to run the following commands as root: ``nodemgr``, ``svcmgr`` and ``rsync``.
+        It is also possible for the agent to login on a peer cluster node using an unprivileged user, using the user node.conf parameter. In this case, the remote user needs sudo privileges to run the following commands as root: ``nodemgr``, ``svcmgr`` and ``rsync``.
 
-**On node1**::
+**On demo1**::
 
-	node1:/ # ssh-copy-id root@node2
+    demo1:/ # om node update ssh keys --node='*'
 
-**On node2**::
-
-	node2:/ # ssh-copy-id root@node1
-
-
-**On node1**::
-
-	node1:/ # ssh node2 hostname
-	node2
-
-**On node2**::
-
-	node2:/ # ssh node1 hostname
-	node1
 
 Set Host Environment
 ====================
@@ -102,25 +90,29 @@ Cluster Build
 
 As our first setup consist in a dual node cluster, we have to follow the steps described here :ref:`agent.configure.cluster`
 
-**On node1**::
-
-    $ om cluster set --param hb#1.type --value unicast
+**On node1**
 
 .. raw:: html
 
     <pre class=output>
-      $ om mon
+    $ om cluster set --kw hb#1.type=unicast
 
-      Threads                            <span style="font-weight: bold">node1</span>
-       <span style="font-weight: bold">listener</span>  <span style="color: #00aa00">running</span> 0.0.0.0:1214
-       <span style="font-weight: bold">monitor</span>   <span style="color: #00aa00">running</span>
-       <span style="font-weight: bold">scheduler</span> <span style="color: #00aa00">running</span>
+    $ sudo om mon
 
-      Nodes                              <span style="font-weight: bold">node1</span>
-       <span style="font-weight: bold"> 15m</span>                             | 0.1
-       <span style="font-weight: bold"> state</span>                           |
+    Threads                           <span style="font-weight: bold">demo1</span>
+     <span style="font-weight: bold">daemon</span>    <span style="color: #00aa00">running</span>               |
+     <span style="font-weight: bold">listener</span>  <span style="color: #00aa00">running</span> :1214
+     <span style="font-weight: bold">monitor</span>   <span style="color: #00aa00">running</span>
+     <span style="font-weight: bold">scheduler</span> <span style="color: #00aa00">running</span>
 
-      Services                           <span style="font-weight: bold">node1</span>
+    Nodes                             <span style="font-weight: bold">demo1</span>
+     <span style="font-weight: bold"> score</span>                          | 70
+     <span style="font-weight: bold">  load 15m</span>                      | 0.0
+     <span style="font-weight: bold">  mem</span>                           | 10/98%:3.82g
+     <span style="font-weight: bold">  swap</span>                          | -
+     <span style="font-weight: bold"> state</span>                          |
+
+    */svc/*                          <span style="font-weight: bold">  demo1</span>
     </pre>
 
 A pair of "Threads" section lines will appear later, when at least a second node joins this cluster seed : one for the sender and the other for the receiver.
@@ -142,47 +134,58 @@ A simple command is needed to create an empty service named ``svc1``::
 
     $ om svc1 create
 
-
-
-
 The expected file name is ``svc1.conf`` located in ``<OSVCETC>``
 At this time, the configuration file should be empty, except its unique id. You have to edit it in order to define your service.
 
-We are going to define a service running on the primary node node ``node1``, failing-over to node ``node2``, using one IP address named ``svc1.opensvc.com`` (name to ip resolution is done by the OpenSVC agent), one LVM volume group ``vgsvc1`` and two filesystems hosted in logical volumes ``/dev/mapper/vgsvc1-lvappsvc1`` and ``/dev/mapper/vgsvc1-lvdatasvc1``.
+We can list our services with the following command::
 
-**On node1 node**::
+    $ om '*/svc/*' ls
+    svc1
+
+We are going to define a service running on the primary node ``demo1``, failing-over to node ``demo2``, using one IP address named ``demosvc.opensvc.com`` (name to ip resolution is done by the OpenSVC agent), one LVM volume group ``vgsvc1`` and two filesystems hosted in logical volumes ``/dev/vgsvc1/app`` and ``/dev/vgsvc1/data``. We expect those resources to already exists on the system. We use a shared disk where demo1 and demo2 can access our service resources.
+
+**On demo1 node**::
 
         $ om svc1 edit config
 
         [DEFAULT]
         app = MyApp
-        nodes = node1 node2
-        id = c450ecfa-2c02-4d4b-95a3-c543d4389ec0
+        nodes = demo1 demo2
+        id = d74cc963-8f18-4c73-9691-9a833dba2a22
 
         [ip#0]
-        ipname = svc1.opensvc.com
-        ipdev = eth0
+        ipname = demosvc.opensvc.com
+        ipdev = br-prd
 
         [disk#0]
         type = vg
-        name = vgsvc1
-        pvs = /dev/loop0
+        name = vgsc1
+
+        [disk#1]
+        type = lv
+        name = app
+        vg = {disk#0.name}
+
+        [disk#2]
+        type = lv
+        name = data
+        vg = {disk#0.name}
 
         [fs#app]
         type = ext4
-        dev = /dev/mapper/vgsvc1-lvappsvc1
-        mnt = /svc1/app
+        dev = {disk#1.exposed_devs[0]}
+        mnt = /{name}/{disk#1.name}
 
         [fs#data]
         type = ext4
-        dev = /dev/mapper/vgsvc1-lvdatasvc1
-        mnt = /svc1/data
+        dev = {disk#1.exposed_devs[0]}
+        mnt = /{name}/{disk#2.name}
 
+Here, we use a bridge so our two nodes demo1 and demo2 can access public network.
 
 The DEFAULT section in the service file describes the service itself: human readable name, nodes where the service is expected to run on...
 
-Every other section defines a ressource managed by the service.
-
+Every other section defines a resource managed by the service.
 
 Step 4 : Service configuration check
 ++++++++++++++++++++++++++++++++++++
@@ -190,13 +193,11 @@ Step 4 : Service configuration check
 As a final check, we can list all entries that match our ``svc1`` service ::
 
         node1:/etc/opensvc # ls -lart | grep svc1
-        -rw-r--r--.  1 root root  287 janv.  2 15:15 svc1.conf
+        -rw-r--r--.  1 root root  331 Jul  12 12:13 svc1.conf
 
-You should be able to see:
+You should be able to see the service configuration file (svc1.conf)
 
-- the service configuration file (svc1.conf)
-
-At this point, we have configured a single service with no application launcher on node node1.
+At this point, we have configured a single service with no application launcher on node demo1.
 
 Service Testing
 ===============
@@ -206,24 +207,95 @@ Query service status
 
 Our first service is now ready to use. We can query its status.
 
-**On node1**::
+**On demo1**
+
+.. raw:: html
+
+    <pre class=output>
+        <style>
+            .down {
+                color: red;
+            }
+            .up {
+                color: green;
+            }
+            .warn {
+                color: brown;
+            }
+            .frozen {
+                color: navy;
+            }
+            .not-provisioned {
+                color: red;
+            }
+            .idle {
+                color: gray;
+            }
+        </style>
+        $ om svc1 print status
+
+        svc1                           <span class="down">down</span>
+        `- instances
+            `- demo1                      <span class="warn">warn</span>       <span class="warn">warn</span>, <span class="frozen">frozen</span>, <span class="not-provisioned">not provisioned</span>, <span class="idle">idle</span>
+                |- ip#0           .....P.. <span class="down">down</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
+                |- disk#0         .....P.. <span class="down">down</span>       vg vgsvc1
+                |- disk#1         .....P.. <span class="down">down</span>       lv vgsvc1/app
+                |- disk#2         .....P.. <span class="down">down</span>       lv vgsvc1/data
+                |- fs#app         .....P.. <span class="down">down</span>       xfs /dev/vgsvc1/app@/svc1/app
+                |- fs#data        .....P.. <span class="down">down</span>       xfs /dev/vgsvc1/data@/svc1/data
+                `- sync#i0        ...O./.. n/a        rsync svc config to nodes
+                                                                                        info: paused, service not up
+    </pre>
+
+.. note::
+
+        by default the agent believes that all resources are not created that's why there is P letter on each resource line, which means unprovisioned. As those resources have already been created by the system administrator we have to inform the opensSVC agent about it using the command ``om svc1 set provisioned``.
+
+**On demo1**
+
+.. raw:: html
+
+    <pre class=output>
+        <style>
+            .down {
+                color: red;
+            }
+            .up {
+                color: green;
+            }
+            .warn {
+                color: brown;
+            }
+            .frozen {
+                color: navy;
+            }
+            .not-provisioned {
+                color: red;
+            }
+            .idle {
+                color: gray;
+            }
+        </style>
+        $ om svc1 set provisioned
 
         $ om svc1 print status
-        svc1                           down
+
+        svc1                           <span class="down">down</span>
         `- instances
-           |- node2                    undef      daemon down
-           `- node1                    warn       warn, frozen, idle
-              |- ip#0           ...... down       svc1.opensvc.com@eth0
-              |- disk#0         ...... up         vg vgsvc1
-              |- fs#app         ...... down       ext4 /dev/mapper/vgsvc1-lvappsvc1@/svc1/app
-              |- fs#data        ...... down       ext4 /dev/mapper/vgsvc1-lvdatasvc1@/svc1/data
-              `- sync#i0        ..O./. n/a        rsync svc config to drpnodes, nodes
-                                                                                      info: paused, service not up
+            `- demo1                      <span class="warn">warn</span>       <span class="warn">warn</span>, <span class="frozen">frozen</span>, <span class="idle">idle</span>
+                |- ip#0           ........ <span class="down">down</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
+                |- disk#0         ........ <span class="down">down</span>       vg vgsvc1
+                |- disk#1         ........ <span class="down">down</span>       lv vgsvc1/app
+                |- disk#2         ........ <span class="down">down</span>       lv vgsvc1/data
+                |- fs#app         ........ <span class="down">down</span>       xfs /dev/vgsvc1/app@/svc1/app
+                |- fs#data        ........ <span class="down">down</span>       xfs /dev/vgsvc1/data@/svc1/data
+                `- sync#i0        ...O./.. n/a        rsync svc config to nodes
+                                                                                        info: paused, service not up
+    </pre>
 
 This command collects and displays status for each service ressource :
 
 - overall status is ``warn`` due to the fact that all ressources are not in ``up`` status
-- ressource ``vg#0`` is up because the volume group is activated (which is the expected status after vgcreate)
 - all other ressources are ``down`` or non available ``n/a``
 
 Start service
@@ -234,25 +306,28 @@ Once the service is described on a node, you just need one command to start the 
 
 Let's start the service on the local node::
 
-        node1:/ # om svc1 start --local
-        node1.svc1.ip#0        checking 192.168.121.42 availability
-        node1.svc1.ip#0        ifconfig eth0:1 192.168.121.42 netmask 255.255.255.0 up
-        node1.svc1.ip#0        arping -U -c 1 -I eth0 -s 192.168.121.42 192.168.121.42
-        node1.svc1.disk#0      vgchange --addtag @node1 vgsvc1
-        node1.svc1.disk#0      output:
-        node1.svc1.disk#0        Volume group "vgsvc1" successfully changed
-        node1.svc1.disk#0
-        node1.svc1.disk#0      vg vgsvc1 is already up
-        node1.svc1.fs#app      e2fsck -p /dev/mapper/vgsvc1-lvappsvc1
-        node1.svc1.fs#app      output:
-        node1.svc1.fs#app      /dev/mapper/vgsvc1-lvappsvc1: clean, 12/25688 files, 8898/102400 blocks
-        node1.svc1.fs#app
-        node1.svc1.fs#app      mount -t ext4 /dev/mapper/vgsvc1-lvappsvc1 /svc1/app
-        node1.svc1.fs#data     e2fsck -p /dev/mapper/vgsvc1-lvdatasvc1
-        node1.svc1.fs#data     output:
-        node1.svc1.fs#data     /dev/mapper/vgsvc1-lvdatasvc1: clean, 12/23616 files, 8637/94208 blocks
-        node1.svc1.fs#data
-        node1.svc1.fs#data     mount -t ext4 /dev/mapper/vgsvc1-lvdatasvc1 /svc1/data
+        opensvc@demo1:~$ om svc1 start --local
+        @ n:demo1 o:svc1 r:ip#0 sc:n
+          checking 5.196.34.135 availability (5s)
+          /sbin/ip addr add 5.196.34.135/27 dev br-prd
+          send gratuitous arp to announce 5.196.34.135 is at br-prd
+        @ n:demo1 o:svc1 r:disk#0 sc:n
+          vgchange --addtag @demo1 vgsvc1
+          | Volume group "vgsvc1" successfully changed
+          vgchange -a y vgsvc1
+          | 2 logical volume(s) in volume group "vgsvc1" now active
+        @ n:demo1 o:svc1 r:disk#1 sc:n
+          lv vgsvc1/app is already up
+        @ n:demo1 o:svc1 r:disk#2 sc:n
+          lv vgsvc1/data is already up
+        @ n:demo1 o:svc1 r:fs#app sc:n
+          e2fsck -p /dev/vgsvc1/app
+          | /dev/vgsvc1/app: clean, 15/65536 files, 15363/262144 blocks
+          mount -t ext4 /dev/vgsvc1/app /svc1/app
+        @ n:demo1 o:svc1 r:fs#data sc:n
+          e2fsck -p /dev/vgsvc1/data
+          | /dev/vgsvc1/data: clean, 20/131072 files, 26167/524288 blocks
+          mount -t ext4 /dev/vgsvc1/data /svc1/data
 
 The startup sequence reads as:
 
@@ -264,37 +339,59 @@ The startup sequence reads as:
 
 Manual filesystem mount check::
 
-        node1:/ # mount | grep svc1
-        /dev/mapper/vgsvc1-lvappsvc1 on /svc1/app type ext4 (rw,relatime,seclabel,data=ordered)
-        /dev/mapper/vgsvc1-lvdatasvc1 on /svc1/data type ext4 (rw,relatime,seclabel,data=ordered)
+        demo1:~$ mount | grep svc1
+        /dev/mapper/vgsvc1-app on /svc1/app type ext4 (rw,relatime,stripe=2048)
+        /dev/mapper/vgsvc1-data on /svc1/data type ext4 (rw,relatime,stripe=2048)
 
-Manual ip address plumbing check on eth0 (svc1.opensvc.com is 192.168.121.42)::
 
-        node1:/ # ip addr list eth0
-        2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
-            link/ether 52:54:00:a6:c3:d7 brd ff:ff:ff:ff:ff:ff
-            inet 192.168.121.249/24 brd 192.168.121.255 scope global dynamic eth0
-               valid_lft 2205sec preferred_lft 2205sec
-            inet 192.168.121.42/24 brd 192.168.121.255 scope global secondary eth0:1
+Manual ip address plumbing check on br-prd (svc1.opensvc.com is 5.196.34.135)::
+
+        demo1:~$ ip addr list br-prd
+        3: br-prd: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+            link/ether c2:98:d3:28:7e:7b brd ff:ff:ff:ff:ff:ff
+            inet 5.196.34.153/27 brd 5.196.34.159 scope global br-prd
+               valid_lft forever preferred_lft forever
+            inet 5.196.34.135/27 scope global secondary br-prd
+               valid_lft forever preferred_lft forever
+            inet6 fe80::c098:d3ff:fe28:7e7b/64 scope link
                valid_lft forever preferred_lft forever
 
-We can confirm everything is OK with the service's ``print status`` command::
 
-        node1:/ # om svc1 print status
-        svc1                           up
+We can confirm everything is OK with the service's ``print status`` command
+
+.. raw:: html
+
+    <pre class=output>
+        <style>
+            .up {
+                color: green;
+            }
+            .frozen {
+                color: navy;
+            }
+            .started {
+                color: gray;
+            }
+            .idle {
+                color: gray;
+            }
+        </style>
+        $ om svc1 print status
+
+        svc1                           <span class="up">up</span>
         `- instances
-           |- node2                    undef      daemon down
-           `- node1                    up         frozen, idle,
-              |                                   started
-              |- ip#0           ...... up         192.168.121.42@eth0
-              |- disk#0         ...... up         vg vgsvc1
-              |- fs#app         ...... up         ext4 /dev/mapper/vgsvc1-lvappsvc1@/svc1/app
-              |- fs#data        ...... up         ext4 /dev/mapper/vgsvc1-lvdatasvc1@/svc1/data
-              `- sync#i0        ..O./. n/a        rsync svc config to drpnodes, nodes
-                                                                                            info: paused, service not up
+            `- demo1                      <span class="up">up</span>       <span class="frozen">frozen</span>, <span class="idle">idle</span>, <span class="started">started</span>
+                |- ip#0           ........ <span class="up">up</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
+                |- disk#0         ........ <span class="up">up</span>       vg vgsvc1
+                |- disk#1         ........ <span class="up">up</span>       lv vgsvc1/app
+                |- disk#2         ........ <span class="up">up</span>       lv vgsvc1/data
+                |- fs#app         ........ <span class="up">up</span>       xfs /dev/vgsvc1/app@/svc1/app
+                |- fs#data        ........ <span class="up">up</span>       xfs /dev/vgsvc1/data@/svc1/data
+                `- sync#i0        ...O./.. n/a      rsync svc config to nodes
+                                                                                        info: paused, service not up
+    </pre>
 
-
-At this point, we have a running service, configured to run on node1 node.
+At this point, we have a running service, configured to run on demo1 node.
 
 Application Integration
 =======================
@@ -306,31 +403,46 @@ We will use a very simple example : a tiny webserver with a single index.html fi
 Application Binary
 ++++++++++++++++++
 
-In the service directory structure, we put a standalone binary of the Mongoose web server (https://code.google.com/p/mongoose/) ::
+In the service directory structure, we put a standalone binary of the Binserve web server (https://github.com/mufeedvh/binserve/) ::
 
-        node1:/ # cd /svc1/app
-        
-        node1:/svc1/app # wget -O /svc1/app/webserver https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/mongoose/mongoose-lua-sqlite-ssl-static-x86_64-5.1
-        --2018-01-02 15:56:28--  https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/mongoose/mongoose-lua-sqlite-ssl-static-x86_64-5.1
-        Resolving storage.googleapis.com (storage.googleapis.com)... 216.58.204.112, 2a00:1450:4007:80a::2010
-        Connecting to storage.googleapis.com (storage.googleapis.com)|216.58.204.112|:443... connected.
+        demo1:$ cd /svc1/app
+
+        demo1:svc1/app$ sudo wget -O /svc1/app/binserve.tar.gz https://github.com/mufeedvh/binserve/releases/download/v0.2.0/binserve-v0.2.0-x86_64-unknown-linux-gnu.tar.gz
+        --2024-07-12 09:34:40--  https://github.com/mufeedvh/binserve/releases/download/v0.2.0/binserve-v0.2.0-x86_64-unknown-linux-gnu.tar.gz
+        Resolving github.com (github.com)... 140.82.121.4
+        Connecting to github.com (github.com)|140.82.121.4|:443... connected.
+        HTTP request sent, awaiting response... 302 Found
+        Location: https://objects.githubusercontent.com/github-production-release-asset-2e65be/300180221/4b52d8b8-d2c3-4f02-aad2-ac86b825da52?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=releaseassetproduction%2F20240712%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240712T073440Z&X-Amz-Expires=300&X-Amz-Signature=bde3ca8606945cad7e30db87443d80bc58d0556f8500e29155e6db11126cbc2c&X-Amz-SignedHeaders=host&actor_id=0&key_id=0&repo_id=300180221&response-content-disposition=attachment%3B%20filename%3Dbinserve-v0.2.0-x86_64-unknown-linux-gnu.tar.gz&response-content-type=application%2Foctet-stream [following]
+        --2024-07-12 09:34:40--  https://objects.githubusercontent.com/github-production-release-asset-2e65be/300180221/4b52d8b8-d2c3-4f02-aad2-ac86b825da52?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=releaseassetproduction%2F20240712%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240712T073440Z&X-Amz-Expires=300&X-Amz-Signature=bde3ca8606945cad7e30db87443d80bc58d0556f8500e29155e6db11126cbc2c&X-Amz-SignedHeaders=host&actor_id=0&key_id=0&repo_id=300180221&response-content-disposition=attachment%3B%20filename%3Dbinserve-v0.2.0-x86_64-unknown-linux-gnu.tar.gz&response-content-type=application%2Foctet-stream
+        Resolving objects.githubusercontent.com (objects.githubusercontent.com)... 185.199.109.133, 185.199.110.133, 185.199.108.133, ...
+        Connecting to objects.githubusercontent.com (objects.githubusercontent.com)|185.199.109.133|:443... connected.
         HTTP request sent, awaiting response... 200 OK
-        Length: 2527016 (2,4M) [application/octet-stream]
-        Saving to: ‘/svc1/app/webserver’
+        Length: 3639943 (3.5M) [application/octet-stream]
+        Saving to: ‘/svc1/app/binserve.tar.gz’
 
-        100%[=====================================================================>] 2 527 016   8,96MB/s   in 0,3s
+        /svc1/app/webserver        100%[=====================================>]   3.47M  --.-KB/s    in 0.1s
 
-        2018-01-02 15:56:29 (8,96 MB/s) - ‘/svc1/app/webserver’ saved [2527016/2527016]
-        
-        node1:/svc1/app # ls -l /svc1/app/webserver
-        -rwxr-xr-x 1 root root 1063420 Feb  1 18:11 /svc1/app/webserver
+        2024-07-12 09:34:41 (33.2 MB/s) - ‘/svc1/app/binserve.tar.gz’ saved [3639943/3639943]
 
-And create a dummy web page in ``/svc1/data/``, to be served by our webserver::
 
-        node1:/svc1/app # cd /svc1/data/
-        
-        node1:/svc1/data # cat index.html
-        <html><body>It Works !</body></html>
+        demo1:/svc1/app # ls -l /svc1/app/binserve.tar.gz
+        -rw-r--r-- 1 root root 2527016 June 13  2022 /svc1/app/binserve.tar.gz
+
+Then, you can extract the content of binserve archive::
+
+        demo1:/svc1/app # tar -xvf binserve.tar.gz
+
+Now we can launch the server and bind our IP address with ``--host`` option::
+
+        demo1:/svc1/data # sudo ./binserve --host 5.196.34.135:8080
+         _   _
+        | |_|_|___ ___ ___ ___ _ _ ___
+        | . | |   |_ -| -_|  _| | | -_|
+        |___|_|_|_|___|___|_|  \_/|___| 0.2.0
+
+        [INFO] Build finished in 291 μs ⚡
+        [SUCCESS] Your server is up and running at 5.196.34.135:8080 🚀
+
 
 Applications launcher script
 ++++++++++++++++++++++++++++
@@ -343,63 +455,62 @@ As a best practice, the script should also support the additional arguments:
 - status
 - info
 
-Of course, we will store our script named ``weblauncher`` in the directory previsouly created for this purpose::
+Of course, we will store our script named ``binserve_launcher`` in the directory previsouly created for this purpose::
 
-        node1:/ # cd /svc1/app/init.d
-        
-        node1:/svc1/app/init.d # cat weblauncher
+        demo1:/ # cd /svc1/app
+
+        demo1:/svc1/app# cat binserve_launcher
         #!/bin/bash
-        
         SVCROOT=/svc1
         APPROOT=${SVCROOT}/app
-        DAEMON=${APPROOT}/webserver
+        DAEMON=${APPROOT}/binserve
         DAEMON_BASE=$(basename $DAEMON)
-        DAEMONOPTS="-document_root ${SVCROOT}/data -index_files index.html -listening_port 8080"
-        
+        DAEMONOPTS="--host 5.196.34.135:8080"
+
         function status {
-        	pgrep $DAEMON_BASE >/dev/null 2>&1
+                pgrep -f "$DAEMON $DAEMONOPTS" >/dev/null 2>&1
         }
-        
+
         case $1 in
-        restart)
-        	killall $DAEMON_BASE
-        	$DAEMON
-        	;;
         start)
-        	status && {
-        		echo "already started"
-        		exit 0
-        	}
-        	nohup $DAEMON $DAEMONOPTS >> /dev/null 2>&1 &
-        	;;
+                status && {
+        	        echo "binserve is already started"
+    	            exit 0
+                }
+                echo "Starting Binserve..."
+                nohup $DAEMON $DAEMONOPTS > /dev/null 2>&1 &
+                echo "Binserve started !"
+	            ;;
         stop)
-        	killall $DAEMON_BASE
-        	;;
+	            killall $DAEMON_BASE
+	            ;;
         info)
-        	echo "Name: webserver"
-        	;;
+	            echo "Name: binserve"
+	            ;;
         status)
-        	status
-        	exit $?
-        	;;
+	            status
+	            exit $?
+	            ;;
         *)
-        	echo "unsupported action: $1" >&2
-        	exit 1
-        	;;
+	            echo "unsupported action: $1" >&2
+	            exit 1
+	            ;;
+
         esac
+        exit 0
 
-Make sure the script is working fine outside of the OpenSVC context::
+Make sure the script is working fine outside of the OpenSVC context (and don't forget to add execute rights to /svc1/app/binserve) ::
 
-        node1:/svc1/app # ./weblauncher status
-        node1:/svc1/app # echo $?
+        demo1:/svc1/app/ # ./binserve_launcher status
+        demo1:/svc1/app/ # echo $?
         1
-        node1:/svc1/app # ./weblauncher start
-        node1:/svc1/app # ./weblauncher status
-        node1:/svc1/app # echo $?
+        demo1:/svc1/app/ # ./binserve_launcher start
+        demo1:/svc1/app/ # ./binserve_launcher status
+        demo1:/svc1/app/ # echo $?
         0
-        node1:/svc1/app # ./weblauncher stop
-        node1:/svc1/app # ./weblauncher status
-        node1:/svc1/app # echo $?
+        demo1:/svc1/app/ # ./binserve_launcher stop
+        demo1:/svc1/app/ # ./binserve_launcher status
+        demo1:/svc1/app/ # echo $?
         1
 
 Now we need to instruct OpenSVC to handle this script for service application management ::
@@ -408,13 +519,13 @@ Now we need to instruct OpenSVC to handle this script for service application ma
 
         (...)
         [app#web]
-        script = weblauncher
-        start = 10
-        check = 10
-        stop = 90
+        type = forking
+        start = {fs#app.mnt}/binserve_launcher start
+        stop = {fs#app.mnt}/binserve_launcher stop
+        check = {fs#app.mnt}/binserve_launcher status
+        info = {fs#app.mnt}/binserve_launcher info
 
-
-This configuration tells OpenSVC to call the ``weblauncher`` script with :
+This configuration tells OpenSVC to call the ``binserver_launcher`` script with :
 
 - ``start`` argument when OpenSVC service starts
 - ``stop`` argument when OpenSVC service stops
@@ -422,58 +533,112 @@ This configuration tells OpenSVC to call the ``weblauncher`` script with :
 
 Now we can give a try to our launcher script, using OpenSVC commands::
 
-        node1:~ # om svc1 start --local
-        node1.svc1.ip#0        192.168.121.42 is already up on eth0
-        node1.svc1.disk#0      vg vgsvc1 is already up
-        node1.svc1.fs#app      ext4 /dev/mapper/vgsvc1-lvappsvc1@/svc1/app is already mounted
-        node1.svc1.fs#data     ext4 /dev/mapper/vgsvc1-lvdatasvc1@/svc1/data is already mounted
-        node1.svc1.app#web     exec /svc1/app/init.d/weblauncher start as user root
-        node1.svc1.app#web     start done in 0:00:00.009874 ret 0
+        demo1:/svc1/app/ # om svc1 start --rid app#web
+        @ n:demo1 o:svc1 r:app#web sc:n
+          exec /svc1/app/binserve_launcher start as user root
+          | Starting Binserve...
+          | Binserve started !
+          start done in 0:00:00.213427 - ret 0
 
-We can see that OpenSVC is now calling our startup script after mounting filesystems.
-        
-Querying the service status, the ``app`` ressource is now reporting ``up``::
+We can see that OpenSVC is successfully launching our server. In addition we can see here that OpenSVC can start resources individually.
 
-        node1:~ # om svc1 print status
-        svc1                           up
+Querying the service status, the ``app`` ressource is now reporting ``up``
+
+**On node1**
+
+.. raw:: html
+
+    <pre class=output>
+        <style>
+            .up {
+                color: green;
+            }
+            .frozen {
+                color: navy;
+            }
+            .started {
+                color: gray;
+            }
+            .idle {
+                color: gray;
+            }
+        </style>
+        $ om svc1 print status
+
+        svc1                           <span class="up">up</span>
         `- instances
-           |- node2                    undef      daemon down
-           `- node1                    up         frozen, idle,
-              |                                   started
-              |- ip#0           ...... up         192.168.121.42@eth0
-              |- disk#0         ...... up         vg vgsvc1
-              |- fs#app         ...... up         ext4 /dev/mapper/vgsvc1-lvappsvc1@/svc1/app
-              |- fs#data        ...... up         ext4 /dev/mapper/vgsvc1-lvdatasvc1@/svc1/data
-              |- app#web        ..../. up         weblauncher
-              `- sync#i0        ..O./. n/a        rsync svc config to drpnodes, nodes
-                                                                                                  info: paused, service not up
-
+            `- demo1                      <span class="up">up</span>       <span class="frozen">frozen</span>, <span class="idle">idle</span>, <span class="started">started</span>
+                |- ip#0           ........ <span class="up">up</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
+                |- disk#0         ........ <span class="up">up</span>       vg vgsvc1
+                |- disk#1         ........ <span class="up">up</span>       lv vgsvc1/app
+                |- disk#2         ........ <span class="up">up</span>       lv vgsvc1/data
+                |- fs#app         ........ <span class="up">up</span>       xfs /dev/vgsvc1/app@/svc1/app
+                |- fs#data        ........ <span class="up">up</span>       xfs /dev/vgsvc1/data@/svc1/data
+                |- app#web        ...../.. <span class="up">up</span>       forking: weblauncher
+                `- sync#i0        ...O./.. n/a      rsync svc config to nodes
+                                                                                        info: paused, service not up
+    </pre>
 
 Let's check if that is really the case::
 
-        node1:/ # ps auxww | grep web
-        root     18643  0.0  0.0   2540   320 pts/0    S    16:13   0:00 /svc1/app/webserver -document_root /svc1/data -index_files index.html -listening_port 8080
-        
-        node1:~ # wget -qO - http://svc1.opensvc.com:8080/
-        <html><body>It Works !</body></html>
+        node1:/ # ps auxww | grep binserve
+        root      479113  0.0  0.2 697672 10400 ?        Sl   Jul12   2:12 /svc1/app/binserve --host 5.196.34.135:8080
+
+        node1:~ # curl demosvc.opensvc.com:8080
+        <!--
+            +----------------------------+
+            | Auto-generated by binserve |
+            +----------------------------+
+        -->
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Binserve v0.2.0</title>
+            <link rel="stylesheet" href="assets/css/styles.css">
+        </head>
+        <body>
+            <div class="contents">
+                <img class="logo" src="assets/images/binserve.webp" alt="binserve logo">
+                <h1>Hello, Universe! 🚀</h1>
+                <p>Your new web server is up and ready!</p>
+                <br>
+                <details>
+                    <summary><strong>Get Started</strong></summary>
+                    <p>Looks like everything's working perfectly! Hurray! 🎉</p>
+                    <p>By default, binserve generates these static content as a boileplate for you to get started quickly.</p>
+                    <p>The directory structure, configuration file, and these sample files utilize all the features.</p>
+                    <p>This can help you learn the usage just by skimming through the generated static files.</p>
+                    <h3>✨ Enjoy the breeze experience! ✨</h3>
+                    <a href="/usage"><button>Usage</button></a>
+                </details>
+                <br>
+                <p><em><strong>binserve v0.2.0</strong></em></p>
+            </div>
+        </body>
 
 Now we can stop our service::
 
-        node1:/ # om svc1 stop --local
-        node1.svc1.app#web     exec /svc1/app/init.d/weblauncher stop as user root
-        node1.svc1.app#web     stop done in 0:00:00.010940 ret 0
-        node1.svc1.fs#data     umount /svc1/data
-        node1.svc1.fs#app      umount /svc1/app
-        node1.svc1.disk#0      vgchange --deltag @node1 vgsvc1
-        node1.svc1.disk#0      output:
-        node1.svc1.disk#0        Volume group "vgsvc1" successfully changed
-        node1.svc1.disk#0
-        node1.svc1.disk#0      vgchange -a n vgsvc1
-        node1.svc1.disk#0      output:
-        node1.svc1.disk#0        0 logical volume(s) in volume group "vgsvc1" now active
-        node1.svc1.disk#0
-        node1.svc1.ip#0        ifconfig eth0:1 down
-        node1.svc1.ip#0        checking 192.168.121.42 availability
+        node1:/ # om svc1 stop --local app#web
+        @ n:demo1 o:svc1 r:app#web sc:n
+          exec /svc1/app/binserve_launcher stop as user root
+          stop done in 0:00:00.403740 - ret 0
+        @ n:demo1 o:svc1 r:fs#data sc:n
+          umount /svc1/data
+        @ n:demo1 o:svc1 r:fs#app sc:n
+          umount /svc1/app
+        @ n:demo1 o:svc1 r:disk#2 sc:n
+          lvchange -a n vgsvc1/data
+        @ n:demo1 o:svc1 r:disk#1 sc:n
+          lvchange -a n vgsvc1/app
+        @ n:demo1 o:svc1 r:disk#0 sc:n
+          vgchange --deltag @demo1 vgsvc1
+          | Volume group "vgsvc1" successfully changed
+        @ n:demo1 o:svc1 r:ip#0 sc:n
+          /sbin/ip addr del 5.196.34.135/27 dev br-prd
+          checking 5.196.34.135 availability (1s)
 
 Once again, a single command:
 
@@ -482,20 +647,48 @@ Once again, a single command:
 - deactivates the volume group
 - disables the service ip address
 
-The overall status is now reported as being down ::
+The overall status is now reported as being down
 
-        node1:/ # om svc1 print status
-        svc1                           down       warn
+**On demo1**
+
+.. raw:: html
+
+    <pre class=output>
+        <style>
+            .down {
+                color: red;
+            }
+            .up {
+                color: green;
+            }
+            .warn {
+                color: brown;
+            }
+            .frozen {
+                color: navy;
+            }
+            .not-provisioned {
+                color: red;
+            }
+            .idle {
+                color: gray;
+            }
+        </style>
+        $ om svc1 print status
+
+        svc1                           <span class="down">down</span>
         `- instances
-           |- node2                    undef      daemon down
-           `- node1                    down       warn, frozen, idle
-              |- ip#0           ...... down       192.168.121.42@eth0
-              |- disk#0         ...... down       vg vgsvc1
-              |- fs#app         ...... down       ext4 /dev/mapper/vgsvc1-lvappsvc1@/svc1/app
-              |- fs#data        ...... down       ext4 /dev/mapper/vgsvc1-lvdatasvc1@/svc1/data
-              |- app#web        ..../. down       weblauncher
-              `- sync#i0        ..O./. warn       rsync svc config to drpnodes, nodes
-                                                                                            warn: passive node needs update
+            `- demo1                      <span class="warn">warn</span>       <span class="warn">warn</span>, <span class="frozen">frozen</span>, <span class="idle">idle</span>
+                |- ip#0           ........ <span class="down">down</span>       5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.co demo1.opensvc.com
+                |- disk#0         ........ <span class="down">down</span>       vg vgsvc1
+                |- disk#1         ........ <span class="down">down</span>       lv vgsvc1/app
+                |- disk#2         ........ <span class="down">down</span>       lv vgsvc1/data
+                |- fs#app         ........ <span class="down">down</span>       xfs /dev/vgsvc1/app@/svc1/app
+                |- fs#data        ........ <span class="down">down</span>       xfs /dev/vgsvc1/data@/svc1/data
+                |- app#web        ...../.. <span class="down">down</span>       forking: weblauncher
+                `- sync#i0        ...O./.. n/a        rsync svc config to nodes
+                                                                                        info: paused, service not up
+    </pre>
 
 Let's restart the service to continue this tutorial::
 
@@ -506,47 +699,61 @@ At this point, we have a running service on node node1, with a webserver applica
 Service Failover
 ================
 
-Our service is running fine, but what happens if the ``node1`` node fails ? Our ``svc1`` service will also fail.
-That's why we want to extend the service configuration to declare ``node2`` as a failover node for this service.
-After this change, the service configuration needs replication to the ``node2`` node. 
+Our service is running fine, but what happens if the ``demo1`` node fails ? Our ``svc1`` service will also fail.
+That's why we want to extend the service configuration to declare ``demo2`` as a failover node for this service.
+After this change, the service configuration needs replication to the ``demo2`` node. 
 
-First, we are going to add ``node2`` in the same cluster than ``node1``
+First, we are going to add ``demo2`` in the same cluster than ``demo1``
 
-On node1::
+**On demo1**::
 
         $ om cluster get --kw cluster.secret
-        7e801abaefc611e780a2525400a6c3d7
-        
+        2bfca0d1393611efa4dc00163e000000
 
-On node2::
+**On demo2**
 
-        $ om daemon join --secret 7e801abaefc611e780a2525400a6c3d7 --node node1
-        node2        freeze local node
-        node2        add heartbeat hb#1
-        node2        join node node1
-        node2        thaw local node
+.. raw:: html
+
+    <pre class=output>
+        <style>
+            .running {
+                color: green;
+            }
+            .O-caret {
+                color: green;
+            }
+            .X-caret {
+                color: gray;
+            }
+        </style>
+        $ om daemon join --secret 2bfca0d1393611efa4dc00163e000000 --node node1
+        @ n:demo2
+          freeze local node
+          add heartbeat hb#1
+          join node demo1
+          thaw local node
 
         $ om mon
 
-        Threads                            node1 node2
-         hb#1.rx   running 0.0.0.0:10000 | O     /
-         hb#1.tx   running               | O     /
-         listener  running 0.0.0.0:1214
-         monitor   running
-         scheduler running
+        Threads                            demo1 demo2
+         hb#1.rx   <span class="running">running</span> [::]:10000    | <span class="O">O</span>     /
+         hb#1.tx   <span class="running">running</span>               | <span class="O">O</span>     /
+         listener  <span class="running">running</span>      :1214
+         monitor   <span class="running">running</span>
+         scheduler <span class="running">running</span>
 
-        Nodes                              node1 node2
+        Nodes                              demo1 demo2
          15m                             | 0.1   0.1
          state                           |       *
 
-        Services                           node1 node2
-         svc1      up!     failover      | O!*
-
+        Services                           demo1 demo2
+         svc1      <span class="running">up</span>              1/1   | <span class="caret">O^</span>    <span class="X-caret">X^</span>
+    </pre>
 
 OpenSVC will synchronize configuration files for your service since this one should be able to run on node1 or node2.
-In order to force it now, run on ``node1`` ::
+In order to force it now, run on ``demo1`` ::
 
-        # om svc1 sync nodes
+        # om svc1 sync nodes --rid sync#i0
 
 The configuration replication will be possible if the following conditions are met:
 
@@ -555,27 +762,66 @@ The configuration replication will be possible if the following conditions are m
 - the node sending config files (node1) must be running the service (the service availability status, apps excluded, is up).
 - the previous synchronisation is older than the configured minimum delay, or the --force option is set to bypass the delay check.
 
-
 **On node1**
 
-We can now try to start the service on ``node2``, after stopping it on ``node1``::
+We can now try to switch the svc1 service from ``demo1`` to ``demo2``
 
-        node1:/ # om svc1  stop
-        
-**On node2**::
+**On demo2**
 
-        node2:~ # om svc1 start --local
+.. raw:: html
 
-Service svc1 is now running on node ``node2``. Service relocation operational is easy as that.
+    <pre class=output>
+        <style>
+            .down {
+                color: red;
+            }
+            .placement {
+                color: red;
+            }
+            .up {
+                color: green;
+            }
+            .warn {
+                color: brown;
+            }
+            .frozen {
+                color: navy;
+            }
+            .not-provisioned {
+                color: red;
+            }
+            .idle {
+                color: gray;
+            }
+        </style>
+        $ om svc1 switch
+        $ om mon
+        $ om svc1 print status -r
 
-Now, what happens if I try to start my service on ``node1`` while already running on ``node2`` ? ::
+        svc1                             <span class="up">up</span>         <span class="placement">non-optimal placement</span>
+        `- instances
+           |- demo1                      <span class="down">down</span>       <span class="idle">idle</span>
+           `- demo2                      <span class="up">up</span>         <span class="idle">idle</span>, started
+              |- ip#0           ........ <span class="up">up</span>         5.196.34.135/255.255.255.224 br-prd demosvc.opensvc.com
+              |- disk#0         ........ <span class="up">up</span>         vg vgsvc1
+              |- disk#1         ........ <span class="up">up</span>         lv vgsvc1/app
+              |- disk#2         ........ <span class="up">up</span>         lv vgsvc1/data
+              |- fs#app         ........ <span class="up">up</span>         ext4 /dev/vgsvc1/app@/svc1/app
+              |- fs#data        ........ <span class="up">up</span>         ext4 /dev/vgsvc1/data@/svc1/data
+              |- app#web        ...../.. <span class="up">up</span>         forking: weblauncher
+              `- sync#i0        ...O./.. <span class="up">up</span>         rsync svc config to nodes
+    </pre>
+
+Service svc1 is now running on node ``demo2``. Service relocation is as easy as that.
+
+Now, what happens if we try to start our service on ``demo1`` while already running on ``demo2`` ? ::
 
         node1:/ # om svc1 start --local
-        node1.svc1.ip#0        checking 192.168.121.42 availability
+        node1.svc1.ip#0        checking 5.196.34.135 availability
         node1.svc1           E start aborted due to resource ip#0 conflict
         node1.svc1             skip rollback start: no resource activated
 
-Fortunately, OpenSVC IP address check prevent the service from starting on ``node1``.
+Fortunately, OpenSVC IP address check prevent the service from starting on ``demo1``.
 
 .. note::
 
@@ -591,10 +837,10 @@ You only have to change the orchestration mode to ``ha``. For more information a
 On the node currently running your service, add ``orchestrate = ha`` in the ``DEFAULT`` section::
 
         # om svc1 edit config
-        
+
         [DEFAULT]
         app = MyApp
-        nodes = node1 node2
+        nodes = demo1 demo2
         orchestrate = ha
         (...)
 
@@ -608,13 +854,18 @@ For example::
         (...)
         [app#web]
         monitor = True
-        script = weblauncher
-        start = 10
-        check = 10
-        stop = 90
+        type = forking
+        start = {fs#app.mnt}/weblauncher start
+        stop = {fs#app.mnt}/weblauncher stop
+        check = {fs#app.mnt}/weblauncher status
+        info = {fs#app.mnt}/weblauncher info
+
 
 Unfreeze your service to allow the daemon to orchestrate your service::
 
         # om svc1 thaw
 
 Now, if your webserver resource failed, OpenSVC will relocate the service on the other node without any human intervention.
+
+
+
